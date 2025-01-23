@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Gutenberg Viewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="max-w-2xl w-full bg-white shadow-lg rounded-lg p-6">
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">Project Gutenberg Viewer</h1>
+    
+    <!-- Input Form -->
+    <form id="book-form" class="space-y-4">
+      <div>
+        <label for="bookId" class="block text-sm font-medium text-gray-700">Enter Book ID:</label>
+        <input
+          type="text"
+          id="bookId"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          placeholder="e.g., 1787"
+          required
+        />
+      </div>
+      <button
+        type="submit"
+        class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md shadow hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+      >
+        Fetch Book
+      </button>
+    </form>
+    
+    <!-- Results Section -->
+    <div id="results" class="mt-6">
+      <!-- Metadata Section -->
+      <div id="metadata" class="mb-4">
+        <h2 class="text-lg font-semibold text-gray-700">Metadata</h2>
+        <p class="text-sm text-gray-500">No metadata available yet.</p>
+      </div>
+      
+      <!-- Book Content Section -->
+      <div id="content">
+        <h2 class="text-lg font-semibold text-gray-700">Book Content</h2>
+        <p class="text-sm text-gray-500">No content available yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    document.getElementById("book-form").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const bookId = document.getElementById("bookId").value;
+
+      // Fetch Book Metadata
+      const metadataUrl = `http://localhost:8080/api/books/${bookId}`;
+
+      try {
+        const metadataResponse = await fetch(metadataUrl);
+
+        if (!metadataResponse.ok) {
+          throw new Error("Failed to fetch book data.");
+        }
+
+        const metadataJson = await metadataResponse.json();
+
+        
+        // Update Metadata Section
+        const metadataSection = document.getElementById("metadata");
+        metadataSection.innerHTML = `
+          <h2 class="text-lg font-semibold text-gray-700">Metadata</h2>
+          <p class="text-sm text-gray-500"><a href="${metadataJson.metadataUrl}" target="_blank" class="text-indigo-600 underline">View Metadata</a></p>
+        `;
+
+        // Update Content Section
+        const contentSection = document.getElementById("content");
+      contentSection.innerHTML = `
+        <h2 class="text-lg font-semibold text-gray-700">Book Content</h2>
+        <textarea
+          class="w-full h-40 mt-2 rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+          readonly
+        >${metadataJson.content}...</textarea>
+      `;
+      
+        console.log(metadataJson.content)
+      } catch (error) {
+        alert("Error fetching book data: " + error.message);
+      }
+    });
+  </script>
+</body>
+</html>
