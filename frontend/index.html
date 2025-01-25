@@ -51,38 +51,37 @@
     document.getElementById("book-form").addEventListener("submit", async function (event) {
       event.preventDefault();
       const bookId = document.getElementById("bookId").value;
-
-      // Fetch Book Metadata
+  
+      // Fetch Book Data (Metadata and Content)
       const metadataUrl = `http://localhost:8080/api/books/${bookId}`;
-
+  
       try {
         const metadataResponse = await fetch(metadataUrl);
-
+  
         if (!metadataResponse.ok) {
           throw new Error("Failed to fetch book data.");
         }
-
+  
         const metadataJson = await metadataResponse.json();
-
-        
+  
         // Update Metadata Section
         const metadataSection = document.getElementById("metadata");
         metadataSection.innerHTML = `
           <h2 class="text-lg font-semibold text-gray-700">Metadata</h2>
-          <p class="text-sm text-gray-500"><a href="${metadataJson.metadataUrl}" target="_blank" class="text-indigo-600 underline">View Metadata</a></p>
+          <p class="text-sm text-gray-500">
+            <a href="${metadataJson.metadataUrl}" target="_blank" class="text-indigo-600 underline">View Metadata</a>
+          </p>
         `;
-
+  
         // Update Content Section
         const contentSection = document.getElementById("content");
-      contentSection.innerHTML = `
-        <h2 class="text-lg font-semibold text-gray-700">Book Content</h2>
-        <textarea
-          class="w-full h-40 mt-2 rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-          readonly
-        >${metadataJson.content}...</textarea>
-      `;
-      
-        console.log(metadataJson.content)
+        contentSection.innerHTML = `
+          <h2 class="text-lg font-semibold text-gray-700">Book Content</h2>
+          <textarea
+            class="w-full h-40 mt-2 rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+            readonly
+          >${metadataJson.content}...</textarea>
+        `;
       } catch (error) {
         alert("Error fetching book data: " + error.message);
       }

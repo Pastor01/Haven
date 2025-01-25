@@ -4,34 +4,26 @@ import com.haven.gutenbergBooks.model.Book;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 public class BookService {
 
-    private final Map<String, Book> bookStore = new HashMap<>();
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
-    public Book fetchBook(String bookId) {
-        String metadataUrl = "https://www.gutenberg.org/ebooks/" + bookId;
-        String contentUrl = "https://www.gutenberg.org/files/" + bookId + "/" + bookId + "-0.txt";
-
-        try {
-            // Fetch content
-            String content = restTemplate.getForObject(contentUrl, String.class);
-
-            // Store the book in memory
-            Book book = new Book(bookId, metadataUrl, content);
-            bookStore.put(bookId, book);
-
-            return book;
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching book data: " + e.getMessage());
-        }
+    public BookService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
-    public Map<String, Book> getAllBooks() {
-        return bookStore;
+    public Book fetchBook(String bookId) {
+        String contentUrl = String.format("https://www.gutenberg.org/files/%s/%s-0.txt", bookId, bookId);
+        String metadataUrl = String.format("https://www.gutenberg.org/ebooks/%s", bookId);
+
+        String content = restTemplate.getForObject(contentUrl, String.class);
+
+        Book book = new Book();
+        book.setContent(content);
+        book.setMetadataUrl(metadataUrl);
+
+        return book;
     }
 }
