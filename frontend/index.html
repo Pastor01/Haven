@@ -6,10 +6,10 @@
   <title>Project Gutenberg Viewer</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
   <div class="max-w-2xl w-full bg-white shadow-lg rounded-lg p-6">
     <h1 class="text-2xl font-bold text-gray-800 mb-4">Project Gutenberg Viewer</h1>
-    
+
     <!-- Input Form -->
     <form id="book-form" class="space-y-4">
       <div>
@@ -29,7 +29,7 @@
         Fetch Book
       </button>
     </form>
-    
+
     <!-- Results Section -->
     <div id="results" class="mt-6">
       <!-- Metadata Section -->
@@ -37,7 +37,7 @@
         <h2 class="text-lg font-semibold text-gray-700">Metadata</h2>
         <p class="text-sm text-gray-500">No metadata available yet.</p>
       </div>
-      
+
       <!-- Book Content Section -->
       <div id="content">
         <h2 class="text-lg font-semibold text-gray-700">Book Content</h2>
@@ -46,46 +46,82 @@
     </div>
   </div>
 
+  <!-- Previously Accessed Books -->
+  <div id="previous-books" class="mt-6 max-w-2xl w-full bg-white shadow-lg rounded-lg p-6">
+    <h2 class="text-lg font-bold text-gray-800">Previously Accessed Books</h2>
+    <ul id="books-list" class="list-disc list-inside text-sm text-gray-700">
+      <!-- List of books will go here -->
+    </ul>
+  </div>
+
   <!-- JavaScript -->
   <script>
-    document.getElementById("book-form").addEventListener("submit", async function (event) {
-      event.preventDefault();
-      const bookId = document.getElementById("bookId").value;
-  
-      // Fetch Book Data (Metadata and Content)
-      const metadataUrl = `http://localhost:8080/api/books/${bookId}`;
-  
-      try {
-        const metadataResponse = await fetch(metadataUrl);
-  
-        if (!metadataResponse.ok) {
-          throw new Error("Failed to fetch book data.");
+    document.addEventListener("DOMContentLoaded", () => {
+      // Load previously accessed books
+      loadPreviousBooks();
+
+      document.getElementById("book-form").addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const bookId = document.getElementById("bookId").value;
+
+        // Fetch Book Metadata
+        const metadataUrl = `http://localhost:8080/api/books/${bookId}`;
+
+        try {
+          const response = await fetch(metadataUrl);
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch book data.");
+          }
+
+          const bookData = await response.json();
+
+          // Save book data in localStorage
+          const previousBooks = JSON.parse(localStorage.getItem("books")) || [];
+          previousBooks.push({ bookId, metadataUrl: bookData.metadataUrl, content: bookData.content });
+          localStorage.setItem("books", JSON.stringify(previousBooks));
+
+          // Update the UI
+          displayBookData(bookData);
+          loadPreviousBooks();
+        } catch (error) {
+          alert("Error fetching book data: " + error.message);
         }
-  
-        const metadataJson = await metadataResponse.json();
-  
-        // Update Metadata Section
-        const metadataSection = document.getElementById("metadata");
-        metadataSection.innerHTML = `
-          <h2 class="text-lg font-semibold text-gray-700">Metadata</h2>
-          <p class="text-sm text-gray-500">
-            <a href="${metadataJson.metadataUrl}" target="_blank" class="text-indigo-600 underline">View Metadata</a>
-          </p>
-        `;
-  
-        // Update Content Section
-        const contentSection = document.getElementById("content");
-        contentSection.innerHTML = `
-          <h2 class="text-lg font-semibold text-gray-700">Book Content</h2>
-          <textarea
-            class="w-full h-40 mt-2 rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-            readonly
-          >${metadataJson.content}...</textarea>
-        `;
-      } catch (error) {
-        alert("Error fetching book data: " + error.message);
-      }
+      });
     });
+
+    function displayBookData(bookData) {
+      const metadataSection = document.getElementById("metadata");
+      metadataSection.innerHTML = `
+        <h2 class="text-lg font-semibold text-gray-700">Metadata</h2>
+        <p class="text-sm text-gray-500"><a href="${bookData.metadataUrl}" target="_blank" class="text-indigo-600 underline">View Metadata</a></p>
+      `;
+
+      const contentSection = document.getElementById("content");
+      contentSection.innerHTML = `
+        <h2 class="text-lg font-semibold text-gray-700">Book Content</h2>
+        <textarea
+          class="w-full h-40 mt-2 rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+          readonly
+        >${bookData.content}</textarea>
+      `;
+    }
+
+    function loadPreviousBooks() {
+      const previousBooks = JSON.parse(localStorage.getItem("books")) || [];
+      const booksList = document.getElementById("books-list");
+
+      booksList.innerHTML = "";
+
+      previousBooks.forEach((book) => {
+        const listItem = document.createElement("li");
+        listItem.innerHTML = `
+          <span><strong>Book ID:</strong> ${book.bookId}</span> - 
+          <a href="${book.metadataUrl}" target="_blank" class="text-indigo-600 underline">Metadata</a>
+        `;
+        booksList.appendChild(listItem);
+      });
+    }
   </script>
 </body>
 </html>
