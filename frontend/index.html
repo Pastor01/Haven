@@ -70,15 +70,17 @@
         try {
           const response = await fetch(metadataUrl);
 
-          if (!response.ok) {
-            throw new Error("Failed to fetch book data.");
-          }
+          if (!response.ok) throw new Error("Failed to fetch book data.");
 
           const bookData = await response.json();
 
           // Save book data in localStorage
           const previousBooks = JSON.parse(localStorage.getItem("books")) || [];
-          previousBooks.push({ bookId, metadataUrl: bookData.metadataUrl, content: bookData.content });
+          previousBooks.push({
+            bookId,
+            metadataUrl: bookData.metadataUrl,
+            content: bookData.content,
+          });
           localStorage.setItem("books", JSON.stringify(previousBooks));
 
           // Update the UI
@@ -94,7 +96,9 @@
       const metadataSection = document.getElementById("metadata");
       metadataSection.innerHTML = `
         <h2 class="text-lg font-semibold text-gray-700">Metadata</h2>
-        <p class="text-sm text-gray-500"><a href="${bookData.metadataUrl}" target="_blank" class="text-indigo-600 underline">View Metadata</a></p>
+        <p class="text-sm text-gray-500">
+          <a href="${bookData.metadataUrl}" target="_blank" class="text-indigo-600 underline">View Metadata</a>
+        </p>
       `;
 
       const contentSection = document.getElementById("content");
@@ -102,8 +106,7 @@
         <h2 class="text-lg font-semibold text-gray-700">Book Content</h2>
         <textarea
           class="w-full h-40 mt-2 rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-          readonly
-        >${bookData.content}</textarea>
+          readonly>${bookData.content}</textarea>
       `;
     }
 
@@ -113,15 +116,71 @@
 
       booksList.innerHTML = "";
 
-      previousBooks.forEach((book) => {
+      previousBooks.forEach((book, index) => {
         const listItem = document.createElement("li");
         listItem.innerHTML = `
-          <span><strong>Book ID:</strong> ${book.bookId}</span> - 
-          <a href="${book.metadataUrl}" target="_blank" class="text-indigo-600 underline">Metadata</a>
+          <div class="flex justify-between items-center">
+            <div>
+              <span><strong>Book ID:</strong> ${book.bookId}</span> - 
+              <a href="${book.metadataUrl}" target="_blank" class="text-indigo-600 underline">Metadata</a>
+            </div>
+            <button
+              onclick="analyzeBook(${index})"
+              class="ml-4 bg-green-500 text-white py-1 px-3 rounded-md shadow hover:bg-green-600"
+            >
+              Analyze
+            </button>
+          </div>
+          <div id="analysis-result-${index}" class="text-sm text-gray-700 mt-2"></div>
         `;
         booksList.appendChild(listItem);
       });
     }
+
+    async function analyzeBook(index) {
+    const previousBooks = JSON.parse(localStorage.getItem("books"));
+    const book = previousBooks[index];
+    const analysisUrl = "https://api.sambanova.ai/v1/chat/completions";
+    const apiKey = "153c1857-0d53-4a99-9949-c031c99f0efd";
+
+    try {
+      // Sending the analysis request
+      const response = await fetch(analysisUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          stream: false,
+          model: "Meta-Llama-3.1-8B-Instruct",
+          messages: [
+            { role: "system", content: "You are an assistant specialized in analyzing books." },
+            {
+              role: "user",
+              content: `Can you identify the principal characters from the following book? Here is the text: ${book.content.slice(0,500)}`,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorDetails = await response.text();
+        throw new Error(`Failed to analyze book. API responded with: ${errorDetails}`);
+      }
+
+      const data = await response.json();
+
+      const resultContainer = document.getElementById(`analysis-result-${index}`);
+      if (resultContainer) {
+        resultContainer.textContent = `Analysis Result: ${data.choices[0].message.content}`;
+      } else {
+        alert("Result container not found in the HTML!");
+      }
+    } catch (error) {
+      alert("Error analyzing book: " + error.message);
+    }
+  }
   </script>
 </body>
 </html>
