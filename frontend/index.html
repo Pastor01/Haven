@@ -23,7 +23,8 @@
         />
       </div>
       <button
-        type="submit"
+        type="button"
+        id="fetch-book"
         class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md shadow hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
       >
         Fetch Book
@@ -54,14 +55,24 @@
     </ul>
   </div>
 
+  <!-- Analyze Book Button -->
+  <div id="analyze-section" class="mt-4 max-w-2xl w-full bg-white shadow-lg rounded-lg p-6 hidden">
+    <button
+      id="analyze-book"
+      class="w-full bg-green-600 text-white py-2 px-4 rounded-md shadow hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+    >
+      Analyze Selected Book
+    </button>
+    <div id="analysis-result" class="mt-4 text-sm text-gray-700"></div>
+  </div>
+
   <!-- JavaScript -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       // Load previously accessed books
       loadPreviousBooks();
 
-      document.getElementById("book-form").addEventListener("submit", async function (event) {
-        event.preventDefault();
+      document.getElementById("fetch-book").addEventListener("click", async function () {
         const bookId = document.getElementById("bookId").value;
 
         // Fetch Book Metadata
@@ -125,62 +136,47 @@
               <a href="${book.metadataUrl}" target="_blank" class="text-indigo-600 underline">Metadata</a>
             </div>
             <button
-              onclick="analyzeBook(${index})"
-              class="ml-4 bg-green-500 text-white py-1 px-3 rounded-md shadow hover:bg-green-600"
+              onclick="prepareAnalyze(${index})"
+              class="ml-4 bg-blue-500 text-white py-1 px-3 rounded-md shadow hover:bg-blue-600"
             >
-              Analyze
+              Select for Analysis
             </button>
           </div>
-          <div id="analysis-result-${index}" class="text-sm text-gray-700 mt-2"></div>
         `;
         booksList.appendChild(listItem);
       });
     }
 
-    async function analyzeBook(index) {
-    const previousBooks = JSON.parse(localStorage.getItem("books"));
-    const book = previousBooks[index];
-    const analysisUrl = "https://api.sambanova.ai/v1/chat/completions";
-    const apiKey = "153c1857-0d53-4a99-9949-c031c99f0efd";
+    function prepareAnalyze(index) {
+      const previousBooks = JSON.parse(localStorage.getItem("books"));
+      const selectedBook = previousBooks[index];
 
-    try {
-      // Sending the analysis request
-      const response = await fetch(analysisUrl, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          stream: false,
-          model: "Meta-Llama-3.1-8B-Instruct",
-          messages: [
-            { role: "system", content: "You are an assistant specialized in analyzing books." },
-            {
-              role: "user",
-              content: `Can you identify the principal characters from the following book? Here is the text: ${book.content.slice(0,500)}`,
+      // Show analyze section
+      const analyzeSection = document.getElementById("analyze-section");
+      analyzeSection.classList.remove("hidden");
+
+      document.getElementById("analyze-book").onclick = async function () {
+        const analysisUrl = "http://localhost:8080/api/books/analyze";
+
+        try {
+          const response = await fetch(analysisUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-          ],
-        }),
-      });
+            body: JSON.stringify({ content: selectedBook.content }),
+          });
 
-      if (!response.ok) {
-        const errorDetails = await response.text();
-        throw new Error(`Failed to analyze book. API responded with: ${errorDetails}`);
-      }
+          if (!response.ok) throw new Error("Failed to analyze book.");
 
-      const data = await response.json();
-
-      const resultContainer = document.getElementById(`analysis-result-${index}`);
-      if (resultContainer) {
-        resultContainer.textContent = `Analysis Result: ${data.choices[0].message.content}`;
-      } else {
-        alert("Result container not found in the HTML!");
-      }
-    } catch (error) {
-      alert("Error analyzing book: " + error.message);
+          const data = await response.json();
+          const resultContainer = document.getElementById("analysis-result");
+          resultContainer.textContent = `Analysis Result: ${data.analysis}`;
+        } catch (error) {
+          alert("Error analyzing book: " + error.message);
+        }
+      };
     }
-  }
   </script>
 </body>
 </html>
