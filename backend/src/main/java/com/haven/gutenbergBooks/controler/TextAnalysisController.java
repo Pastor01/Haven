@@ -21,18 +21,19 @@ public class TextAnalysisController {
     }
 
     @PostMapping("/analyze")
-    public ResponseEntity<String> analyzeText(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> analyzeText(@RequestBody Map<String, String> request) {
         String userMessage = request.get("message");
 
         if (userMessage == null || userMessage.isEmpty()) {
-            return ResponseEntity.badRequest().body("Message is required.");
+            return ResponseEntity.badRequest().body(Map.of("error", "Message is required."));
         }
 
         try {
-            String response = sambaNovaService.sendRequest(userMessage);
+            Map<String, Object> response = sambaNovaService.sendRequest(userMessage);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error: " + e.getMessage()));
         }
     }
 }

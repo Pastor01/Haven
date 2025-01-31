@@ -1,5 +1,6 @@
 package com.haven.gutenbergBooks.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -16,7 +17,7 @@ public class SambaService {
         this.restTemplate = restTemplate;
     }
 
-    public String sendRequest(String userMessage) {
+    public Map sendRequest(String userMessage) {
         String apiUrl = "https://api.sambanova.ai/v1/chat/completions";
         String apiKey = "153c1857-0d53-4a99-9949-c031c99f0efd";
 
@@ -25,8 +26,8 @@ public class SambaService {
                 "stream", false,
                 "model", "Meta-Llama-3.1-8B-Instruct",
                 "messages", List.of(
-                        Map.of("role", "system", "content", "You are a helpful assistant"),
-                        Map.of("role", "user", "content", userMessage)
+                        Map.of("role", "system", "content", "You are a librarian"),
+                        Map.of("role", "user", "content", "Can you give me the key characters from this story: " + userMessage)
                 )
         );
 
@@ -39,9 +40,9 @@ public class SambaService {
 
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, request, String.class);
-
             if (response.getStatusCode() == HttpStatus.OK) {
-                return response.getBody();
+                ObjectMapper objectMapper = new ObjectMapper();
+                return objectMapper.readValue(response.getBody(), Map.class);
             } else {
                 throw new RuntimeException("SambaNova API returned an error: " + response.getStatusCode());
             }

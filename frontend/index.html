@@ -151,6 +151,8 @@
       const previousBooks = JSON.parse(localStorage.getItem("books"));
       const selectedBook = previousBooks[index];
 
+      const truncatedContent = selectedBook.content.substring(0, 5000); 
+
       // Show analyze section
       const analyzeSection = document.getElementById("analyze-section");
       analyzeSection.classList.remove("hidden");
@@ -164,14 +166,24 @@
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ content: selectedBook.content }),
+            body: JSON.stringify({ message: truncatedContent })
           });
 
-          if (!response.ok) throw new Error("Failed to analyze book.");
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to analyze book.");
+          }
+
 
           const data = await response.json();
-          const resultContainer = document.getElementById("analysis-result");
-          resultContainer.textContent = `Analysis Result: ${data.analysis}`;
+
+          let analysisContent = '';
+          if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+            analysisContent = data.choices[0].message.content;
+          }
+
+          // Display the analysis result
+          document.getElementById("analysis-result").textContent = `Analysis Result: ${analysisContent}`;
         } catch (error) {
           alert("Error analyzing book: " + error.message);
         }
